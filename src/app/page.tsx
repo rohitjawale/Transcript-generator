@@ -1,65 +1,129 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import React from 'react'
+import Link from 'next/link'
+import { Plus, Search, Calendar, User, Building, MessageSquare } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { Interview } from '@/types/database'
+import { format } from 'date-fns'
+import { cn } from '@/lib/utils'
+
+export default function ListingPage() {
+  const [interviews, setInterviews] = useState<Interview[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    fetchInterviews()
+  }, [])
+
+  async function fetchInterviews() {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('interviews')
+        .select('*')
+        .order('interview_date', { ascending: false })
+
+      if (error) throw error
+      setInterviews(data || [])
+    } catch (error) {
+      console.error('Error fetching interviews:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredInterviews = interviews.filter(interview =>
+    interview.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    interview.interviewer_name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Interviews</h1>
+          <p className="text-gray-500 mt-1">Manage and review your interview transcripts</p>
+        </div>
+        <Link
+          href="/interviews/new"
+          className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors gap-2"
+        >
+          <Plus size={20} />
+          New Interview
+        </Link>
+      </header>
+
+      <div className="relative mb-8">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <input
+          type="text"
+          placeholder="Search by company or interviewer..."
+          className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-48 bg-gray-100 animate-pulse rounded-xl" />
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      ) : filteredInterviews.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredInterviews.map((interview) => (
+            <Link
+              key={interview.id}
+              href={`/interviews/${interview.id}`}
+              className="group bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <Building size={24} />
+                </div>
+                <span className="text-xs font-medium text-gray-400">
+                  {format(new Date(interview.created_at), 'MMM d, yyyy')}
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                {interview.company_name}
+              </h3>
+              <div className="flex items-center gap-2 text-gray-500 text-sm mb-4">
+                <User size={14} />
+                <span>{interview.interviewer_name}</span>
+              </div>
+              <div className="flex items-center justify-between pt-4 border-t border-gray-50 text-gray-400 text-xs mt-auto">
+                <div className="flex items-center gap-1">
+                  <Calendar size={14} />
+                  <span>{format(new Date(interview.interview_date), 'MMM d, yyyy')}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <MessageSquare size={14} />
+                  <span>Transcript ready</span>
+                </div>
+              </div>
+            </Link>
+          ))}
         </div>
-      </main>
+      ) : (
+        <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+          <div className="mx-auto w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mb-4">
+            <Building size={32} />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900">No interviews found</h3>
+          <p className="text-gray-500 mt-1">Start by creating your first interview record.</p>
+          <Link
+            href="/interviews/new"
+            className="mt-6 inline-flex items-center text-blue-600 font-medium hover:underline gap-1"
+          >
+            Create new interview <Plus size={16} />
+          </Link>
+        </div>
+      )}
     </div>
-  );
+  )
 }

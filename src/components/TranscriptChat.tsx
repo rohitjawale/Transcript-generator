@@ -10,7 +10,7 @@ interface ChatBubbleProps {
 }
 
 export function ChatBubble({ message, index }: ChatBubbleProps) {
-    const isMe = message.sender === 'Me'
+    const isMe = message.isMe
 
     return (
         <motion.div
@@ -28,12 +28,17 @@ export function ChatBubble({ message, index }: ChatBubbleProps) {
         >
             <div
                 className={cn(
-                    "max-w-[80%] px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm",
+                    "max-w-[85%] px-4 py-2 rounded-2xl text-sm leading-relaxed shadow-sm",
                     isMe
                         ? "bg-blue-600 text-white rounded-br-none"
                         : "bg-white text-gray-800 rounded-bl-none border border-gray-100"
                 )}
             >
+                <div className="flex items-center gap-2 mb-1 opacity-70">
+                    <span className="font-bold border-b border-current pb-0.5 text-[10px] uppercase tracking-wider">
+                        {message.sender}
+                    </span>
+                </div>
                 <div className="whitespace-pre-wrap">{message.text}</div>
                 {message.timestamp && (
                     <div className={cn(
